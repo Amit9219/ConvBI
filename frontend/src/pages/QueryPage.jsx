@@ -10,9 +10,26 @@ const QueryPage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // 1. Fetch Datasets
     api.get('/upload/datasets').then(({ data }) => {
       setDatasets(data);
       if (data.length > 0) setSelectedDataset(data[0]._id);
+    });
+
+    // 2. Fetch Query History
+    api.get('/query/history').then(({ data }) => {
+      const historyMessages = data.reverse().flatMap(q => ([
+        { role: 'user', content: q.prompt },
+        { 
+          role: 'bot', 
+          content: `I've generated a ${q.chartConfig?.chartType || 'table'} chart reflecting your query.`, 
+          chartData: q.resultData,
+          chartConfig: q.chartConfig
+        }
+      ]));
+      setMessages(historyMessages);
+    }).catch(err => {
+      console.error('Failed to fetch history', err);
     });
   }, []);
 

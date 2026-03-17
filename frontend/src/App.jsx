@@ -8,16 +8,21 @@ import { ProtectedRoute } from './components/Layout/ProtectedRoute';
 import DashboardHome from './pages/DashboardHome';
 import QueryPage from './pages/QueryPage';
 import DatasetsPage from './pages/DatasetsPage';
+import LandingPage from './pages/LandingPage';
+import { useAuthStore } from './store/useAuthStore';
 
 function App() {
+  const { user } = useAuthStore();
+
   return (
     <Router>
       <Toaster position="top-right" />
       <Routes>
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/" element={user ? <ProtectedRoute><Layout /></ProtectedRoute> : <LandingPage />}>
           <Route index element={<DashboardHome />} />
           <Route path="query" element={<QueryPage />} />
           <Route path="datasets" element={<DatasetsPage />} />

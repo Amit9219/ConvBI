@@ -1,12 +1,27 @@
 const { GoogleGenAI } = require('@google/genai');
 const { z } = require('zod');
 
-// Ensure GEMINI_API_KEY is available in process.env
-// The SDK will automatically pick it up, or we can instantiate manually.
+// Keep track of the current index for round-robin key rotation
+let currentKeyIndex = 0;
+
+const getApiKey = () => {
+  const keysStr = process.env.GEMINI_API_KEY || '';
+  const keys = keysStr.split(',').map(k => k.trim()).filter(k => k);
+  
+  if (keys.length === 0) {
+    throw new Error('GEMINI_API_KEY is not set in environment variables');
+  }
+  
+  // Simple round-robin approach to spread rate limits evenly
+  const key = keys[currentKeyIndex];
+  currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+  
+  return key;
+};
 
 const generateChartConfig = async (prompt, columnsMetadata) => {
   try {
-    const ai = new GoogleGenAI({});
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
     const schema = z.object({
       intent: z.string(),
