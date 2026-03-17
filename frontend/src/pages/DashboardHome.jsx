@@ -12,6 +12,7 @@ import Footer from '../components/Landing/Footer';
 const DashboardHome = () => {
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -27,6 +28,8 @@ const DashboardHome = () => {
     };
     fetchHistory();
   }, []);
+
+  const displayedQueries = showAll ? queries : queries.slice(0, 3);
 
   return (
     <div className="flex flex-col">
@@ -55,16 +58,33 @@ const DashboardHome = () => {
               <Link to="/query" className="mt-8 px-6 py-3 bg-indigo-50 text-indigo-700 font-semibold text-sm rounded-xl hover:bg-indigo-100 transition-colors">Start Exploring Data</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {queries.map(q => (
-              <ChartCard 
-                key={q._id}
-                title={q.prompt}
-                data={q.resultData}
-                config={q.chartConfig}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {displayedQueries.map(q => (
+                <ChartCard 
+                  key={q._id}
+                  title={q.prompt}
+                  data={q.resultData}
+                  config={q.chartConfig}
+                />
+              ))}
+            </div>
+            
+            {queries.length > 3 && (
+              <div className="flex justify-center mt-10">
+                <button 
+                  onClick={() => setShowAll(!showAll)}
+                  className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2 shadow-sm"
+                >
+                  {showAll ? (
+                    <>Show Less</>
+                  ) : (
+                    <>View All Dashboards ({queries.length})</>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
