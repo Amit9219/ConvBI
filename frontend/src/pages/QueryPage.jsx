@@ -1,15 +1,80 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import ChatWindow from '../components/Chat/ChatWindow';
 import ChartRenderer from '../components/Dashboard/ChartRenderer';
 import api from '../lib/axios';
 import toast from 'react-hot-toast';
-import { Database, Terminal, BarChart2 } from 'lucide-react';
+import { Database, Terminal, BarChart2, LineChart, PieChart, Table as TableIcon, Layout, ArrowDown } from 'lucide-react';
+
+const DashboardCard = ({ message }) => {
+  const [activeChartType, setActiveChartType] = useState(message.chartConfig?.chartType || 'bar');
+  
+  const config = {
+    ...message.chartConfig,
+    chartType: activeChartType
+  };
+
+  const chartOptions = [
+    { id: 'bar', icon: BarChart2, label: 'Bar' },
+    { id: 'line', icon: LineChart, label: 'Line' },
+    { id: 'pie', icon: PieChart, label: 'Pie' },
+    { id: 'table', icon: TableIcon, label: 'Table' },
+  ];
+
+  return (
+    <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-md flex flex-col overflow-hidden mb-6 group transition-all hover:shadow-lg hover:border-indigo-200">
+      {/* Card Header */}
+      <div className="h-10 bg-slate-50 border-b border-slate-100 flex items-center justify-between px-4">
+        <div className="flex items-center space-x-2">
+           <div className="flex space-x-1">
+             <div className="w-2.5 h-2.5 rounded-full bg-red-400/70"></div>
+             <div className="w-2.5 h-2.5 rounded-full bg-amber-400/70"></div>
+             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/70"></div>
+           </div>
+           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">Result Output</span>
+        </div>
+        
+        {/* Chart Switcher Toolbar */}
+        <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5">
+          {chartOptions.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setActiveChartType(opt.id)}
+              className={`p-1 rounded-md transition-all flex items-center gap-1.5 px-2 ${
+                activeChartType === opt.id 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              }`}
+              title={opt.label}
+            >
+              <opt.icon size={12} />
+              <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Content Area */}
+      <div className="p-4 bg-slate-50/30 flex-1">
+         <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm min-h-[350px]">
+            <ChartRenderer data={message.chartData} config={config} />
+         </div>
+      </div>
+      
+      {/* Footer Info */}
+      <div className="px-4 py-2 border-t border-slate-50 bg-white flex justify-between items-center text-[10px] text-slate-400 font-medium">
+         <span>Intent: {message.chartConfig?.intent || 'Analysis'}</span>
+         <span>Extracted from AI response</span>
+      </div>
+    </div>
+  );
+};
 
 const QueryPage = () => {
   const [messages, setMessages] = useState([]);
   const [datasets, setDatasets] = useState([]);
   const [selectedDataset, setSelectedDataset] = useState('');
   const [loading, setLoading] = useState(false);
+  const canvasEndRef = useRef(null);
 
   useEffect(() => {
     // 1. Fetch Datasets
@@ -34,6 +99,11 @@ const QueryPage = () => {
       console.error('Failed to fetch history', err);
     });
   }, []);
+
+  useEffect(() => {
+    // Auto-scroll the canvas when new messages arrive
+    canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = async (prompt) => {
     if (!selectedDataset) {
@@ -63,9 +133,9 @@ const QueryPage = () => {
     }
   };
 
-  // Find the most recent chart generation to display in the right pane
-  const latestChartMessage = useMemo(() => {
-    return [...messages].reverse().find(m => m.chartData && m.chartConfig);
+  // Filter only bot messages that have chart data for the right panel
+  const chartMessages = useMemo(() => {
+    return messages.filter(m => m.chartData && m.chartConfig);
   }, [messages]);
 
   const activeDatasetName = datasets.find(d => d._id === selectedDataset)?.name || 'Unknown Source';
@@ -73,10 +143,8 @@ const QueryPage = () => {
   return (
     <div className="h-[calc(100vh-72px)] w-full flex bg-slate-100 overflow-hidden">
       
-      {/* LEFT PANE: Chat Interface (35% width, min 320px) */}
-      <div className="w-full md:w-[35%] min-w-[320px] max-w-[450px] flex flex-col bg-white border-r border-slate-200 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.1)] z-10 relative">
-        
-        {/* Chat Header / Dataset Selection */}
+      {/* LEFT PANE: Chat Interface (35% width) */}
+      <div className="w-full md:w-[32%] min-w-[320px] max-w-[420px] flex flex-col bg-white border-r border-slate-200 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.08)] z-10 relative">
         <div className="flex-none p-4 border-b border-slate-100 bg-white">
            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-3">
              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -100,59 +168,84 @@ const QueryPage = () => {
            </div>
         </div>
         
-        {/* Chat Window Container */}
-        <div className="flex-1 overflow-hidden bg-slate-50/50">
+        <div className="flex-1 overflow-hidden bg-slate-50/30">
           <ChatWindow messages={messages} onSendMessage={handleSendMessage} loading={loading} />
         </div>
       </div>
 
-      {/* RIGHT PANE: Dashboard/Terminal View (65% width) */}
+      {/* RIGHT PANE: Dashboard Results Gallery (68% width) */}
       <div className="hidden md:flex flex-1 flex-col bg-slate-50 relative overflow-hidden">
-        {/* Right Pane Header */}
-        <div className="h-12 border-b border-slate-200 bg-white flex items-center justify-between px-4 shrink-0 shadow-sm z-0">
-          <div className="flex items-center space-x-2 text-slate-600">
-            <BarChart2 size={16} />
-            <span className="text-sm font-semibold">Dashboard Canvas</span>
-            {latestChartMessage && (
-               <span className="ml-2 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100 uppercase tracking-wide">
-                 {latestChartMessage.chartConfig.chartType} View
-               </span>
+        {/* Gallery Header */}
+        <div className="h-12 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+          <div className="flex items-center space-x-3 text-slate-600">
+            <Layout size={18} className="text-indigo-500" />
+            <span className="text-sm font-bold tracking-tight text-slate-800 uppercase">Dashboard Canvas</span>
+            {chartMessages.length > 0 && (
+               <div className="flex items-center space-x-2">
+                 <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                 <span className="text-xs font-medium text-slate-400">
+                   {chartMessages.length} Generated Output{chartMessages.length !== 1 ? 's' : ''}
+                 </span>
+               </div>
             )}
           </div>
-          <div className="flex items-center space-x-2 text-xs font-medium text-slate-400">
-             <span>Source: <span className="text-slate-600">{activeDatasetName}</span></span>
+          <div className="flex items-center space-x-4">
+             <div className="flex items-center space-x-1.5 text-xs font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Active: <span className="text-slate-700 font-bold">{activeDatasetName}</span></span>
+             </div>
           </div>
         </div>
 
-        {/* Right Pane Body (The Canvas) */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          {latestChartMessage ? (
-             <div className="w-full h-full min-h-[500px] bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col overflow-hidden relative group">
-                {/* Decorative Header for the Terminal Box */}
-                <div className="h-8 bg-slate-100/50 border-b border-slate-200 flex items-center px-4 space-x-2">
-                   <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-                   <div className="flex-1 text-center pr-8">
-                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Render Output</span>
-                   </div>
-                </div>
-                
-                {/* The Actual Chart */}
-                <div className="flex-1 p-6 relative">
-                  <ChartRenderer data={latestChartMessage.chartData} config={latestChartMessage.chartConfig} />
-                </div>
+        {/* Gallery Body (Scrollable Results) */}
+        <div className="flex-1 p-6 overflow-y-auto scroll-smooth custom-scrollbar">
+          {chartMessages.length > 0 ? (
+             <div className="max-w-5xl mx-auto space-y-2">
+               {chartMessages.map((msg, idx) => (
+                 <DashboardCard key={idx} message={msg} />
+               ))}
+               <div ref={canvasEndRef} className="h-4" />
              </div>
           ) : (
-            /* Empty State */
-            <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 bg-white/50">
-               <Terminal size={48} className="mb-4 text-slate-300" strokeWidth={1.5} />
-               <p className="text-lg font-medium text-slate-600">No output generated yet</p>
-               <p className="text-sm mt-2 max-w-sm text-center">Use the chat interface on the left to ask questions about your data, and the resulting charts will appear right here.</p>
+            <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400 bg-white/40 backdrop-blur-sm mx-auto max-w-4xl my-10 transition-all hover:bg-white/60">
+               <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 ring-8 ring-indigo-50/50">
+                 <Terminal size={40} className="text-indigo-500" strokeWidth={1.5} />
+               </div>
+               <p className="text-xl font-bold text-slate-800 tracking-tight">Your Canvas is Ready</p>
+               <p className="text-sm mt-3 max-w-sm text-center text-slate-500 leading-relaxed font-medium">Use the chat interface on the left to ask questions. Every generated chart will appear here as a persistent trackable result.</p>
+               
+               <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-md">
+                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                    <BarChart2 size={24} className="text-amber-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-700 uppercase">Multi-View</span>
+                    <p className="text-[10px] text-slate-400 mt-1">Switch types instantly</p>
+                 </div>
+                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                    <ArrowDown size={24} className="text-indigo-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-700 uppercase">Persistence</span>
+                    <p className="text-[10px] text-slate-400 mt-1">Previous results stay</p>
+                 </div>
+               </div>
             </div>
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}</style>
     </div>
   );
 };
