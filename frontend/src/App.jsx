@@ -10,6 +10,7 @@ import QueryPage from './pages/QueryPage';
 import DatasetsPage from './pages/DatasetsPage';
 import LandingPage from './pages/LandingPage';
 import { useAuthStore } from './store/useAuthStore';
+import Navbar from './components/Layout/Navbar';
 
 function App() {
   const { user } = useAuthStore();
@@ -17,6 +18,7 @@ function App() {
   return (
     <Router>
       <Toaster position="top-right" />
+      <Navbar />
       <Routes>
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
