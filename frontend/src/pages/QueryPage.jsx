@@ -1,17 +1,17 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import ChatWindow from '../components/Chat/ChatWindow';
 import ChartRenderer from '../components/Dashboard/ChartRenderer';
 import api from '../lib/axios';
 import toast from 'react-hot-toast';
 import { Database, Terminal, BarChart2, LineChart, PieChart, Table as TableIcon, Layout, ArrowDown } from 'lucide-react';
 
-const DashboardCard = ({ message }) => {
+const DashboardCard = memo(({ message }) => {
   const [activeChartType, setActiveChartType] = useState(message.chartConfig?.chartType || 'bar');
   
-  const config = {
+  const config = useMemo(() => ({
     ...message.chartConfig,
     chartType: activeChartType
-  };
+  }), [message.chartConfig, activeChartType]);
 
   const chartOptions = [
     { id: 'bar', icon: BarChart2, label: 'Bar' },
@@ -67,7 +67,9 @@ const DashboardCard = ({ message }) => {
       </div>
     </div>
   );
-};
+});
+
+DashboardCard.displayName = 'DashboardCard';
 
 const QueryPage = () => {
   const [messages, setMessages] = useState([]);
@@ -77,14 +79,18 @@ const QueryPage = () => {
   const canvasEndRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // 1. Fetch Datasets
     api.get('/upload/datasets').then(({ data }) => {
+      if (!isMounted) return;
       setDatasets(data);
       if (data.length > 0) setSelectedDataset(data[0]._id);
     });
 
     // 2. Fetch Query History
     api.get('/query/history').then(({ data }) => {
+      if (!isMounted) return;
       const historyMessages = data.reverse().flatMap(q => ([
         { role: 'user', content: q.prompt },
         { 
@@ -98,12 +104,19 @@ const QueryPage = () => {
     }).catch(err => {
       console.error('Failed to fetch history', err);
     });
+
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
-    // Auto-scroll the canvas when new messages arrive
-    canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Auto-scroll the canvas safely
+    if (messages.length > 0) {
+      const timer = setTimeout(() => {
+        canvasEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length]);
 
   const handleSendMessage = async (prompt) => {
     if (!selectedDataset) {
@@ -133,7 +146,6 @@ const QueryPage = () => {
     }
   };
 
-  // Filter only bot messages that have chart data for the right panel
   const chartMessages = useMemo(() => {
     return messages.filter(m => m.chartData && m.chartConfig);
   }, [messages]);
@@ -143,7 +155,7 @@ const QueryPage = () => {
   return (
     <div className="h-[calc(100vh-72px)] w-full flex bg-slate-100 overflow-hidden">
       
-      {/* LEFT PANE: Chat Interface (35% width) */}
+      {/* LEFT PANE */}
       <div className="w-full md:w-[32%] min-w-[320px] max-w-[420px] flex flex-col bg-white border-r border-slate-200 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.08)] z-10 relative">
         <div className="flex-none p-4 border-b border-slate-100 bg-white">
            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-3">
@@ -173,7 +185,7 @@ const QueryPage = () => {
         </div>
       </div>
 
-      {/* RIGHT PANE: Dashboard Results Gallery (68% width) */}
+      {/* RIGHT PANE: Dashboard Results Gallery */}
       <div className="hidden md:flex flex-1 flex-col bg-slate-50 relative overflow-hidden">
         {/* Gallery Header */}
         <div className="h-12 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
@@ -184,7 +196,7 @@ const QueryPage = () => {
                <div className="flex items-center space-x-2">
                  <div className="w-1 h-1 rounded-full bg-slate-300"></div>
                  <span className="text-xs font-medium text-slate-400">
-                   {chartMessages.length} Generated Output{chartMessages.length !== 1 ? 's' : ''}
+                   {chartMessages.length} Result{chartMessages.length !== 1 ? 's' : ''}
                  </span>
                </div>
             )}
@@ -197,12 +209,12 @@ const QueryPage = () => {
           </div>
         </div>
 
-        {/* Gallery Body (Scrollable Results) */}
+        {/* Gallery Body */}
         <div className="flex-1 p-6 overflow-y-auto scroll-smooth custom-scrollbar">
           {chartMessages.length > 0 ? (
              <div className="max-w-5xl mx-auto space-y-2">
                {chartMessages.map((msg, idx) => (
-                 <DashboardCard key={idx} message={msg} />
+                 <DashboardCard key={`card-${idx}`} message={msg} />
                ))}
                <div ref={canvasEndRef} className="h-4" />
              </div>
@@ -213,39 +225,10 @@ const QueryPage = () => {
                </div>
                <p className="text-xl font-bold text-slate-800 tracking-tight">Your Canvas is Ready</p>
                <p className="text-sm mt-3 max-w-sm text-center text-slate-500 leading-relaxed font-medium">Use the chat interface on the left to ask questions. Every generated chart will appear here as a persistent trackable result.</p>
-               
-               <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-md">
-                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                    <BarChart2 size={24} className="text-amber-500 mb-2" />
-                    <span className="text-xs font-bold text-slate-700 uppercase">Multi-View</span>
-                    <p className="text-[10px] text-slate-400 mt-1">Switch types instantly</p>
-                 </div>
-                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-                    <ArrowDown size={24} className="text-indigo-500 mb-2" />
-                    <span className="text-xs font-bold text-slate-700 uppercase">Persistence</span>
-                    <p className="text-[10px] text-slate-400 mt-1">Previous results stay</p>
-                 </div>
-               </div>
             </div>
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}</style>
     </div>
   );
 };
