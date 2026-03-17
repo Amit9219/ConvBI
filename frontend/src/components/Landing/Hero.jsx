@@ -1,8 +1,28 @@
-import { motion } from 'framer-motion';
-import { ArrowRight, Play } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Play, LayoutDashboard, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const Hero = () => {
+  const { user } = useAuthStore();
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  
+  const dynamicWords = [
+    "Visual Intelligence",
+    "Actionable Insights",
+    "Stunning Dashboards",
+    "Business Success",
+    "Data Stories"
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentWordIndex((prev) => (prev + 1) % dynamicWords.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-white pt-2 pb-20 lg:pb-32">
       <div className="container mx-auto px-6 relative z-10">
@@ -22,10 +42,21 @@ const Hero = () => {
               <span className="text-xs font-bold uppercase tracking-wider">New: AI Chat-to-Chart Integration</span>
             </div>
 
-            <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight text-slate-900">
+            <h1 className="text-5xl lg:text-7xl font-extrabold leading-tight tracking-tight text-slate-900">
               Turn Your Data Into <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
-                Visual Intelligence
+              <span className="relative inline-flex min-h-[1.2em] items-center">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={currentWordIndex}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 pb-2"
+                  >
+                    {dynamicWords[currentWordIndex]}
+                  </motion.span>
+                </AnimatePresence>
               </span>
             </h1>
 
@@ -34,20 +65,39 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Link
-                to="/register"
-                className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-[0_20px_50px_rgba(79,110,247,0.3)] hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                Get Started Free <ArrowRight size={20} />
-              </Link>
-              <button
-                className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
-              >
-                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                  <Play size={14} className="text-indigo-600 fill-indigo-600 ml-0.5" />
-                </div>
-                Learn More
-              </button>
+              {user ? (
+                <>
+                  <Link
+                    to="/query"
+                    className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-[0_20px_50px_rgba(79,110,247,0.3)] hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    Start New Query <LayoutDashboard size={20} />
+                  </Link>
+                  <Link
+                    to="/datasets"
+                    className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    Manage Datasets <Database size={20} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-[0_20px_50px_rgba(79,110,247,0.3)] hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    Get Started Free <ArrowRight size={20} />
+                  </Link>
+                  <button
+                    className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                      <Play size={14} className="text-indigo-600 fill-indigo-600 ml-0.5" />
+                    </div>
+                    Learn More
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="pt-4 flex items-center gap-8 border-t border-slate-100">
