@@ -3,7 +3,7 @@ import ChatWindow from '../components/Chat/ChatWindow';
 import ChartRenderer from '../components/Dashboard/ChartRenderer';
 import api from '../lib/axios';
 import toast from 'react-hot-toast';
-import { Database, Terminal, BarChart2, LineChart, PieChart, Table as TableIcon, Layout, ArrowDown } from 'lucide-react';
+import { Database, Terminal, BarChart2, LineChart, PieChart, Table as TableIcon, Layout, ArrowDown, Maximize, Minimize } from 'lucide-react';
 
 const DashboardCard = memo(({ message }) => {
   const [activeChartType, setActiveChartType] = useState(message.chartConfig?.chartType || 'bar');
@@ -76,7 +76,9 @@ const QueryPage = () => {
   const [datasets, setDatasets] = useState([]);
   const [selectedDataset, setSelectedDataset] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const canvasEndRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -146,6 +148,27 @@ const QueryPage = () => {
     }
   };
 
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(err => {
+        toast.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   const chartMessages = useMemo(() => {
     return messages.filter(m => m.chartData && m.chartConfig);
   }, [messages]);
@@ -153,7 +176,12 @@ const QueryPage = () => {
   const activeDatasetName = datasets.find(d => d._id === selectedDataset)?.name || 'Unknown Source';
 
   return (
-    <div className="h-[calc(100vh-72px)] w-full flex bg-gray-100 dark:bg-black overflow-hidden transition-colors duration-300">
+    <div 
+      ref={containerRef}
+      className={`w-full flex bg-gray-100 dark:bg-black overflow-hidden transition-all duration-300 ${
+        isFullscreen ? 'h-screen' : 'h-[calc(100vh-72px)]'
+      }`}
+    >
       
       {/* LEFT PANE */}
       <div className="w-full md:w-[32%] min-w-[320px] max-w-[420px] flex flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.08)] z-10 relative">
@@ -201,7 +229,15 @@ const QueryPage = () => {
                </div>
             )}
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+             <button 
+                onClick={toggleFullscreen}
+                className="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-all flex items-center gap-1.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-800"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+             >
+                {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                <span className="text-[10px] font-bold uppercase hidden sm:inline">{isFullscreen ? "Exit" : "Full Screen"}</span>
+             </button>
              <div className="flex items-center space-x-1.5 text-xs font-medium text-gray-400 bg-gray-50 dark:bg-gray-900 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-800">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>Active: <span className="text-gray-700 dark:text-gray-200 font-bold">{activeDatasetName}</span></span>
