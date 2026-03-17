@@ -19,17 +19,59 @@ const executeAggregation = async (datasetId, chartConfig) => {
   }
 
   // 2. Grouping
-  // If dimensions are provided, group by them. 
-  // If no dimensions but metrics are provided, group everything into one row to get a total.
-  if (dimensions.length > 0 || metrics.length > 0) {
-    const groupId = {};
-    if (dimensions.length > 0) {
+  const { groups = [] } = chartConfig;
+
+  // Helper to convert typical filter object into internal aggregation expression for $cond
+  const convertFilterToExpression = (f) => {
+    const parts = [];
+    for (const [key, val] of Object.entries(f)) {
+      const field = `$data.${key}`;
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        for (const [op, opVal] of Object.entries(val)) {
+          if (op === '$gt') parts.push({ $gt: [field, opVal] });
+          else if (op === '$gte') parts.push({ $gte: [field, opVal] });
+          else if (op === '$lt') parts.push({ $lt: [field, opVal] });
+          else if (op === '$lte') parts.push({ $lte: [field, opVal] });
+          else if (op === '$ne') parts.push({ $ne: [field, opVal] });
+          else if (op === '$in') parts.push({ $in: [field, opVal] });
+        }
+      } else {
+        parts.push({ $eq: [field, val] });
+      }
+    }
+    return parts.length === 1 ? parts[0] : { $and: parts };
+  };
+
+  if (groups.length > 0 || dimensions.length > 0 || metrics.length > 0) {
+    let groupId = {};
+    
+    if (groups.length > 0) {
+      // Comparison logic: uses $cond to bucket rows
+      const branches = [];
+      let defaultLabel = 'Others';
+
+      groups.forEach(g => {
+        if (g.filter === 'rest' || !g.filter) {
+          defaultLabel = g.label;
+        } else {
+          branches.push({
+            case: convertFilterToExpression(g.filter),
+            then: g.label
+          });
+        }
+      });
+
+      groupId["Comparison"] = {
+        $switch: {
+          branches: branches,
+          default: defaultLabel
+        }
+      };
+    } else if (dimensions.length > 0) {
       dimensions.forEach(dim => {
         groupId[dim] = `$data.${dim}`;
       });
     } else {
-      // Fallback: group by a constant label if no dimensions but metrics exist (e.g. "Total")
-      // This allows the frontend to show a single bar/row.
       groupId["Summary"] = { $literal: "Total" };
     }
 

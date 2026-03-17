@@ -5,17 +5,15 @@ let currentKeyIndex = 0;
 
 const getApiKey = () => {
   const keysStr = process.env.GEMINI_API_KEY || '';
-  const keys = keysStr.split(',').map(k => k.trim()).filter(k => k);
+  const keys = [...new Set(keysStr.split(',').map(k => k.trim()).filter(k => k))];
   
   if (keys.length === 0) {
     throw new Error('GEMINI_API_KEY is not set in environment variables');
   }
   
-  // Simple round-robin approach to spread rate limits evenly
-  const key = keys[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-  
-  return key;
+  // Randomize key selection to spread rate limits evenly, 
+  // especially for short-lived processes where index-based rotation resets.
+  return keys[Math.floor(Math.random() * keys.length)];
 };
 
 const generateChartConfig = async (prompt, columnsMetadata) => {
@@ -33,15 +31,16 @@ Return ONLY a valid JSON object matching this schema:
   "metrics": ["y-axis numeric columns (e.g. TotalCharges) or the special word 'Count'"],
   "dimensions": ["x-axis/category columns (e.g. gender)"],
   "filters": {"column": {"$operator": value} or "exact_value"},
+  "groups": [{"label": "String", "filter": {"column": {"$operator": value}}} or "rest"],
   "chartType": "bar|line|pie|table|scatter"
 }
 Rules: 
+- Use 'metrics' and 'dimensions' for standard aggregations.
 - If the user asks for "how much", "how many", "count of", or "total number", ALWAYS use "Count" in the 'metrics' array.
+- If asked to "compare" a filtered group with the 'rest' or 'others', use the 'groups' field. Define one group with the specific filter and another with "rest".
+- Do NOT use 'dimensions' when using 'groups' for comparison.
 - Use MongoDB operators in 'filters' if applicable (e.g., {"MonthlyCharges": {"$gt": 50}}).
-- Use 'pie' for distributions (e.g., "proportion of...", "breakdown by...").
-- Use 'line' for trends or time-series data.
-- Use 'scatter' for correlations between two numeric metrics.
-- Use 'bar' for categorical comparisons or simple counts.
+- Use 'pie' for distributions, 'line' for trends, 'scatter' for correlations, and 'bar' for categorical comparisons.
 - Only use 'table' if the user explicitly asks for a list or raw records.`;
 
     const response = await ai.models.generateContent({
@@ -69,6 +68,7 @@ Rules:
       metrics: Array.isArray(parsedObj.metrics) ? parsedObj.metrics : [],
       dimensions: Array.isArray(parsedObj.dimensions) ? parsedObj.dimensions : [],
       filters: parsedObj.filters || {},
+      groups: Array.isArray(parsedObj.groups) ? parsedObj.groups : [],
       chartType: parsedObj.chartType || 'table'
     };
 
