@@ -50,7 +50,13 @@ const processQuery = async (req, res) => {
 
 const getQueryHistory = async (req, res) => {
    try {
-     const queries = await Query.find({ user: req.user.id }).sort({ createdAt: -1 });
+     // Limit history to last 10 queries to avoid massive payloads
+     // Use .lean() for faster, memory-efficient reads
+     const queries = await Query.find({ user: req.user.id })
+       .sort({ createdAt: -1 })
+       .limit(10)
+       .lean();
+
      res.json(queries);
    } catch (error) {
      res.status(500).json({ message: error.message });

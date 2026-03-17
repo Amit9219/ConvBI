@@ -19,17 +19,24 @@ const executeAggregation = async (datasetId, chartConfig) => {
   }
 
   // 2. Grouping
-  if (dimensions.length > 0) {
+  // If dimensions are provided, group by them. 
+  // If no dimensions but metrics are provided, group everything into one row to get a total.
+  if (dimensions.length > 0 || metrics.length > 0) {
     const groupId = {};
-    dimensions.forEach(dim => {
-      groupId[dim] = `$data.${dim}`;
-    });
+    if (dimensions.length > 0) {
+      dimensions.forEach(dim => {
+        groupId[dim] = `$data.${dim}`;
+      });
+    } else {
+      // Fallback: group by a constant label if no dimensions but metrics exist (e.g. "Total")
+      // This allows the frontend to show a single bar/row.
+      groupId["Summary"] = { $literal: "Total" };
+    }
 
     const groupStage = { _id: groupId };
     
     if (metrics.length > 0) {
       metrics.forEach(metric => {
-        // Safe conversion handling cases where string cannot be parsed to number
         groupStage[metric] = {
           $sum: {
             $convert: {
@@ -42,21 +49,29 @@ const executeAggregation = async (datasetId, chartConfig) => {
         };
       });
     } else {
-      groupStage.count = { $sum: 1 };
+      groupStage.Count = { $sum: 1 };
     }
     
     pipeline.push({ $group: groupStage });
+  } else {
+    // If no dimensions and no metrics (User just asked for "data"), 
+    // we just limit it to 100 rows to avoid crashing the UI.
+    pipeline.push({ $limit: 100 });
+    pipeline.push({ $project: { _id: 0, data: 1 } });
   }
 
   // Execute pipeline
   const results = await Dataset.aggregate(pipeline);
 
   // 3. Format result for Recharts
-  // Flattening _id which contains the grouped dimensions
   const formattedResults = results.map(row => {
-    const flatRow = { ...row._id, ...row };
-    delete flatRow._id;
-    return flatRow;
+    if (row._id) {
+       const flatRow = { ...row._id, ...row };
+       delete flatRow._id;
+       return flatRow;
+    }
+    // If it's a raw listing (no group), return the inner data object
+    return row.data || row;
   });
 
   return formattedResults;
