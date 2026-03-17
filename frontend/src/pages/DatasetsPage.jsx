@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import FileUpload from '../components/Upload/FileUpload';
-import { Database, Table, Calendar } from 'lucide-react';
+import { Database, Table, Calendar, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DatasetsPage = () => {
@@ -25,6 +25,18 @@ const DatasetsPage = () => {
 
   const handleUploadSuccess = (newDataset) => {
     setDatasets([newDataset, ...datasets]);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this dataset? All associated queries will also be removed.')) return;
+    
+    try {
+      await api.delete(`/upload/datasets/${id}`);
+      setDatasets(datasets.filter(ds => ds._id !== id));
+      toast.success('Dataset deleted successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete dataset');
+    }
   };
 
   return (
@@ -88,6 +100,13 @@ const DatasetsPage = () => {
                              </div>
                            </div>
                          </div>
+                         <button
+                           onClick={() => handleDelete(ds._id)}
+                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all focus:outline-none"
+                           title="Delete Dataset"
+                         >
+                           <Trash2 size={18} />
+                         </button>
                       </div>
                     </li>
                   ))}

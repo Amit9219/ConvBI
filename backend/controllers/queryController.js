@@ -20,6 +20,9 @@ const processQuery = async (req, res) => {
     try {
         chartConfig = await generateChartConfig(prompt, dataset.columns);
     } catch(aiError) {
+        if (aiError.message === 'GEMINI_QUOTA_EXCEEDED') {
+            return res.status(429).json({ message: 'The AI Query limit has been reached for the free tier. Please wait a minute and try again.' });
+        }
         // Contextually handling hallucination or errors
         return res.status(400).json({ message: 'AI failed to understand prompt.', details: aiError.message });
     }

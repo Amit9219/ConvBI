@@ -2,6 +2,7 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parser');
 const Dataset = require('../models/Dataset');
+const Query = require('../models/Query');
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -86,4 +87,25 @@ const getDatasetById = async (req, res) => {
   }
 };
 
-module.exports = { upload, uploadCSV, getDatasets, getDatasetById };
+const deleteDataset = async (req, res) => {
+  try {
+    const dataset = await Dataset.findById(req.params.id);
+    if (!dataset || dataset.user.toString() !== req.user.id) {
+       return res.status(404).json({ message: 'Dataset not found or unauthorized' });
+    }
+    
+    // Delete the dataset
+    await Dataset.findByIdAndDelete(req.params.id);
+    
+    // Delete associated queries to prevent orphaned records in history
+    if (Query) {
+        await Query.deleteMany({ dataset: req.params.id });
+    }
+
+    res.json({ message: 'Dataset deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { upload, uploadCSV, getDatasets, getDatasetById, deleteDataset };

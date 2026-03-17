@@ -73,7 +73,13 @@ Rules:
     };
 
   } catch (error) {
-    console.error('AI Service Error:', error.message);
+    console.error('AI Service Error:', error.message || error);
+    
+    const errorMessage = typeof error.message === 'string' ? error.message : JSON.stringify(error);
+    if (errorMessage.includes('429') || errorMessage.includes('ResourceExhausted') || errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+      throw new Error('GEMINI_QUOTA_EXCEEDED');
+    }
+    
     throw new Error('Failed to generate chart config from prompt. ' + error.message);
   }
 };
