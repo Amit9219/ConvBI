@@ -69,7 +69,7 @@ const ChatWindow = ({ messages, onSendMessage, loading, activeDataset }) => {
         )}
         <div ref={bottomRef} className="h-2" />
       </div>
-      <div className="p-4 bg-white dark:bg-gray-900 border-t border-slate-100 dark:border-slate-800 transition-colors">
+      <div className="flex-none">
         <ChatInput onSendMessage={onSendMessage} disabled={loading} activeDataset={activeDataset} />
       </div>
     </div>
