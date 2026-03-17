@@ -43,24 +43,24 @@ const features = [
 
 const Features = () => {
   return (
-    <section className="py-24 bg-slate-50">
+    <section className="py-24 bg-gray-50 dark:bg-black transition-colors duration-300 relative overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-5xl font-bold text-slate-900 mb-6"
+            className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 transition-colors"
           >
             Powerful Features for <br />
-            <span className="text-indigo-600">Data-Driven Teams</span>
+            <span className="text-indigo-600 dark:text-indigo-500">Data-Driven Teams</span>
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-500"
+            className="text-lg text-gray-500"
           >
             Everything you need to turn raw data into strategic decisions. No complex setup, no steeper learning curve.
           </motion.p>
@@ -75,13 +75,13 @@ const Features = () => {
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
               whileHover={{ y: -10 }}
-              className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group"
+              className="bg-white dark:bg-gray-950 p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all group"
             >
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+              <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-4">{feature.title}</h3>
-              <p className="text-slate-500 leading-relaxed">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 transition-colors">{feature.title}</h3>
+              <p className="text-gray-500 leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

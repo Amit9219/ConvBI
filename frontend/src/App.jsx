@@ -14,10 +14,23 @@ import { useAuthStore } from './store/useAuthStore';
 import Navbar from './components/Layout/Navbar';
 import Loader from './components/Loader';
 import { useLoaderStore } from './store/useLoaderStore';
+import { useThemeStore } from './store/useThemeStore';
 
 function App() {
   const { user } = useAuthStore();
   const { startLoading, stopLoading } = useLoaderStore();
+  const { theme } = useThemeStore();
+
+  useEffect(() => {
+    // Sync theme with document class
+    if (theme === 'dark') {
+      console.log('Switching to Dark Mode');
+      document.documentElement.classList.add('dark');
+    } else {
+      console.log('Switching to Light Mode');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     // Initial Page Loader Logic
@@ -46,7 +59,16 @@ function App() {
 
   return (
     <Router>
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: theme === 'dark' ? '#0a0a0a' : '#ffffff',
+            color: theme === 'dark' ? '#f3f4f6' : '#1f2937',
+            border: theme === 'dark' ? '1px solid #1f2937' : '1px solid #e2e8f0',
+          },
+        }}
+      />
       <Loader />
       <Navbar />
       <Routes>
