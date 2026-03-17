@@ -55,7 +55,7 @@ const DashboardCard = memo(({ message }) => {
       
       {/* Content Area */}
       <div className="p-4 bg-slate-50/30 flex-1">
-         <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm min-h-[350px]">
+         <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm h-[400px]">
             <ChartRenderer data={message.chartData} config={config} />
          </div>
       </div>

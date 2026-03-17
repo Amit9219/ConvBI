@@ -7,7 +7,7 @@ const LandingPage = () => {
   const { user } = useAuthStore();
 
   return (
-    <div className="min-h-screen flex flex-col pt-20">
+    <div className="min-h-screen flex flex-col">
       <main className="flex-1">
         <Hero />
         <Features />
