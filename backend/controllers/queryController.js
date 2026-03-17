@@ -18,13 +18,13 @@ const processQuery = async (req, res) => {
     // 1. Gen config from LLM
     let chartConfig;
     try {
-        chartConfig = await generateChartConfig(prompt, dataset.columns);
-    } catch(aiError) {
-        if (aiError.message === 'GEMINI_QUOTA_EXCEEDED') {
-            return res.status(429).json({ message: 'The AI Query limit has been reached for the free tier. Please wait a minute and try again.' });
-        }
-        // Contextually handling hallucination or errors
-        return res.status(400).json({ message: 'AI failed to understand prompt.', details: aiError.message });
+      chartConfig = await generateChartConfig(prompt, dataset.columns);
+    } catch (aiError) {
+      if (aiError.message === 'GEMINI_QUOTA_EXCEEDED') {
+        return res.status(429).json({ message: 'The ConvBI AI Query limit has been reached for the free tier. Please wait a minute and try again.' });
+      }
+      // Contextually handling hallucination or errors
+      return res.status(400).json({ message: 'AI failed to understand prompt.', details: aiError.message });
     }
 
     // 2. Execute DB Aggregation
@@ -52,18 +52,18 @@ const processQuery = async (req, res) => {
 };
 
 const getQueryHistory = async (req, res) => {
-   try {
-     // Limit history to last 10 queries to avoid massive payloads
-     // Use .lean() for faster, memory-efficient reads
-     const queries = await Query.find({ user: req.user.id })
-       .sort({ createdAt: -1 })
-       .limit(10)
-       .lean();
+  try {
+    // Limit history to last 10 queries to avoid massive payloads
+    // Use .lean() for faster, memory-efficient reads
+    const queries = await Query.find({ user: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
-     res.json(queries);
-   } catch (error) {
-     res.status(500).json({ message: error.message });
-   }
+    res.json(queries);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
 module.exports = { processQuery, getQueryHistory };
