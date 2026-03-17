@@ -30,12 +30,13 @@ If the user asks for a concept (like 'age') that doesn't exist, try to map it to
 Return ONLY a valid JSON object matching this schema:
 {
   "intent": "aggregation or filtering",
-  "metrics": ["y-axis numeric columns (e.g. TotalCharges)"],
+  "metrics": ["y-axis numeric columns (e.g. TotalCharges) or the special word 'Count'"],
   "dimensions": ["x-axis/category columns (e.g. gender)"],
   "filters": {"column": {"$operator": value} or "exact_value"},
   "chartType": "bar|line|pie|table|scatter"
 }
 Rules: 
+- If the user asks for "how much", "how many", "count of", or "total number", ALWAYS use "Count" in the 'metrics' array.
 - Use MongoDB operators in 'filters' if applicable (e.g., {"MonthlyCharges": {"$gt": 50}}).
 - Use 'pie' for distributions (e.g., "proportion of...", "breakdown by...").
 - Use 'line' for trends or time-series data.

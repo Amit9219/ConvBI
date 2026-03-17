@@ -37,16 +37,20 @@ const executeAggregation = async (datasetId, chartConfig) => {
     
     if (metrics.length > 0) {
       metrics.forEach(metric => {
-        groupStage[metric] = {
-          $sum: {
-            $convert: {
-              input: `$data.${metric}`,
-              to: 'double',
-              onError: 0,
-              onNull: 0
+        if (metric === 'Count') {
+          groupStage.Count = { $sum: 1 };
+        } else {
+          groupStage[metric] = {
+            $sum: {
+              $convert: {
+                input: `$data.${metric}`,
+                to: 'double',
+                onError: 0,
+                onNull: 0
+              }
             }
-          }
-        };
+          };
+        }
       });
     } else {
       groupStage.Count = { $sum: 1 };
