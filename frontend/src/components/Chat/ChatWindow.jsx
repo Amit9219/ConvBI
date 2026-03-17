@@ -17,9 +17,9 @@ const ChatWindow = ({ messages, onSendMessage, loading, activeDataset }) => {
             <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-indigo-100 dark:border-indigo-800/50">
                <span className="text-2xl">✨</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">Ask anything about your data</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-              No SQL or complex setup needed. Just type what you want to know. Here are some examples to get you started:
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Ask about your data</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 focus-text">
+              Examples to get started:
             </p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -44,7 +44,7 @@ const ChatWindow = ({ messages, onSendMessage, loading, activeDataset }) => {
               <div className="mt-10">
                 <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Available Fields in {activeDataset.name}
+                  Fields
                 </h4>
                 <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
                   {activeDataset.columns.map((col, i) => (
