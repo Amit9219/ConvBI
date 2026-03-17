@@ -173,7 +173,11 @@ const QueryPage = () => {
     return messages.filter(m => m.chartData && m.chartConfig);
   }, [messages]);
 
-  const activeDatasetName = datasets.find(d => d._id === selectedDataset)?.name || 'Unknown Source';
+  const activeDataset = useMemo(() => {
+    return datasets.find(d => d._id === selectedDataset);
+  }, [datasets, selectedDataset]);
+
+  const activeDatasetName = activeDataset?.name || 'Unknown Source';
 
   return (
     <div 
@@ -209,7 +213,7 @@ const QueryPage = () => {
         </div>
         
         <div className="flex-1 overflow-hidden bg-gray-50/30 dark:bg-black">
-          <ChatWindow messages={messages} onSendMessage={handleSendMessage} loading={loading} />
+          <ChatWindow messages={messages} onSendMessage={handleSendMessage} loading={loading} activeDataset={activeDataset} />
         </div>
       </div>
 
