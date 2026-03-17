@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
-    <section className="relative overflow-hidden bg-white pt-16 pb-24 lg:pt-32 lg:pb-32">
+    <section className="relative overflow-hidden bg-white pt-8 pb-20 lg:pt-16 lg:pb-32">
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
           {/* Left Side: Content */}
@@ -72,9 +72,9 @@ const Hero = () => {
           >
             <div className="relative z-10 rounded-3xl overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.1)] border border-white/20 bg-white/30 backdrop-blur-sm p-2">
               <img 
-                src="https://images.unsplash.com/photo-1551288049-bbbda536339a?q=80&w=2070&auto=format&fit=crop" 
-                alt="Dashboard Preview" 
-                className="rounded-2xl"
+                src="/assets/hero-preview.png" 
+                alt="ConvBI Dashboard Preview" 
+                className="rounded-2xl w-full h-auto object-cover"
               />
             </div>
             
